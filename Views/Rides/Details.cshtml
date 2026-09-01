@@ -1,0 +1,332 @@
+﻿@model UcpCarPool.Models.Ride
+
+@{
+    ViewData["Title"] = "Ride Details";
+
+    var vehicle = ViewBag.Vehicle as UcpCarPool.Models.Vehicle;
+
+    bool isOwner = ViewBag.IsOwner ?? false;
+    bool canRequest = ViewBag.CanRequest ?? false;
+    bool genderBlocked = ViewBag.GenderBlocked ?? false;
+
+    string? myStatus = ViewBag.MyRequestStatus;
+    bool alreadyRatedDriver = ViewBag.AlreadyRatedDriver ?? false;
+}
+
+<div class="ucp-card" style="max-width: 720px; margin: 0 auto;">
+    <div class="ucp-card-body">
+
+        <!-- ROUTE -->
+        <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+
+            <h2 class="mb-0">@Model.FromLocation</h2>
+
+            <span class="text-muted-soft fs-4">&rarr;</span>
+
+            <h2 class="mb-0">@Model.ToLocation</h2>
+
+            @if (Model.PreferredGender == "Female")
+            {
+                <span class="badge"
+                      style="background:#E85D9C; color:#fff;">
+                    Female Only
+                </span>
+            }
+            else if (Model.PreferredGender == "Male")
+            {
+                <span class="badge"
+                      style="background:#3B82C4; color:#fff;">
+                    Male Only
+                </span>
+            }
+
+        </div>
+
+        <!-- ROUTE LINE -->
+        <div class="route-divider">
+            <span class="route-dot"></span>
+            <span class="route-line"></span>
+            <span class="route-dot end"></span>
+        </div>
+
+        <!-- RIDE INFORMATION -->
+        <div class="row mb-3">
+
+            <div class="col-md-6">
+
+                <p class="mb-1">
+                    <strong>Date:</strong>
+                    @Model.RideDate.ToString("dddd, d MMM yyyy")
+                </p>
+
+                <p class="mb-1">
+                    <strong>Departure:</strong>
+                    @Model.DepartureTime.ToString(@"hh\:mm")
+                </p>
+
+                <p class="mb-1">
+                    <strong>Seats Available:</strong>
+                    @Model.AvailableSeats / @Model.TotalSeats
+                </p>
+
+                <p class="mb-1">
+                    <strong>Contribution:</strong>
+                    Rs. @Model.Contribution per seat
+                </p>
+
+                <p class="mb-1">
+                    <strong>Status:</strong>
+                    @Model.Status
+                </p>
+
+            </div>
+
+            <!-- DRIVER -->
+            <div class="col-md-6">
+
+                <p class="mb-1">
+                    <strong>Driver:</strong>
+                    @Model.Driver?.FullName
+
+                    @if (Model.Driver?.IsUcpVerified == true)
+                    {
+                        <span class="badge bg-success">
+                            Verified
+                        </span>
+                    }
+                </p>
+
+                <p class="mb-1">
+                    <strong>Rating:</strong>
+
+                    ⭐ @Model.Driver?.AverageRating.ToString("0.0")
+
+                    (@Model.Driver?.TotalRatings reviews)
+                </p>
+
+                @if (vehicle != null)
+                {
+                    <p class="mb-1">
+                        <strong>Vehicle:</strong>
+
+                        @vehicle.Model
+                        (@vehicle.VehicleType, @vehicle.Color)
+                    </p>
+                }
+
+            </div>
+
+        </div>
+
+        <!-- NOTES -->
+        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <div class="alert alert-info">
+                @Model.Notes
+            </div>
+        }
+
+
+        <!-- =====================================================
+             DRIVER / OWNER VIEW
+             ===================================================== -->
+        @if (isOwner)
+        {
+            var pendingCount = Model.RideRequests
+                .Count(rr => rr.Status == "Pending");
+
+            var acceptedPassengers = Model.RideRequests
+                .Where(rr => rr.Status == "Accepted")
+                .ToList();
+
+            <div class="d-flex gap-2 mt-3 flex-wrap">
+
+                <a asp-action="Index"
+                   class="btn btn-outline-primary">
+                    Back to My Rides
+                </a>
+
+                @if (Model.Status == "Active")
+                {
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="btn btn-primary">
+                        Edit Ride
+                    </a>
+                }
+
+                <a asp-controller="Requests"
+                   asp-action="ForRide"
+                   asp-route-id="@Model.Id"
+                   class="btn btn-accent">
+
+                    Manage Requests
+
+                    @if (pendingCount > 0)
+                    {
+                        <span class="badge bg-light text-dark ms-1">
+                            @pendingCount
+                        </span>
+                    }
+
+                </a>
+
+                @if (Model.Status == "Active" || Model.Status == "Full")
+                {
+                    <form asp-action="MarkCompleted"
+                          asp-route-id="@Model.Id"
+                          method="post"
+                          onsubmit="return confirm('Mark this ride as completed?');">
+
+                        @Html.AntiForgeryToken()
+
+                        <button type="submit"
+                                class="btn btn-outline-primary">
+                            Mark Completed
+                        </button>
+
+                    </form>
+                }
+
+            </div>
+
+
+            <!-- RATE PASSENGERS -->
+            @if (Model.Status == "Completed" &&
+                             acceptedPassengers.Any())
+            {
+                <h5 class="mt-4 mb-2">
+                    Rate Your Passengers
+                </h5>
+
+                @foreach (var rr in acceptedPassengers)
+                {
+                    <div class="d-flex justify-content-between align-items-center border rounded-3 p-2 mb-2">
+
+                        <span>
+                            @rr.Passenger?.FullName
+                        </span>
+
+                        <a asp-controller="Ratings"
+                           asp-action="Rate"
+                           asp-route-rideId="@Model.Id"
+                           asp-route-toUserId="@rr.PassengerId"
+                           class="btn btn-sm btn-outline-primary">
+                            Rate
+                        </a>
+
+                    </div>
+                }
+            }
+        }
+
+        <!-- =====================================================
+             PASSENGER VIEW
+             ===================================================== -->
+        @if (!isOwner)
+        {
+            <!-- EXISTING REQUEST -->
+            @if (myStatus != null)
+            {
+                var badgeClass = myStatus switch
+                {
+                    "Accepted" => "alert-success",
+                    "Rejected" => "alert-danger",
+                    "Cancelled" => "alert-warning",
+                    _ => "alert-info"
+                };
+
+                <div class="alert @badgeClass mt-3">
+
+                    Your request status:
+
+                    <strong>@myStatus</strong>
+
+                </div>
+
+
+                <!-- RATE DRIVER -->
+                @if (Model.Status == "Completed" &&
+                                     myStatus == "Accepted")
+                {
+                    @if (alreadyRatedDriver)
+                    {
+                        <div class="alert alert-info">
+                            You've already rated this driver.
+                        </div>
+                    }
+                    else
+                    {
+                        <a asp-controller="Ratings"
+                           asp-action="Rate"
+                           asp-route-rideId="@Model.Id"
+                           asp-route-toUserId="@Model.DriverId"
+                           class="btn btn-accent">
+
+                            Rate the Driver
+
+                        </a>
+                    }
+                }
+            }
+
+            <!-- GENDER BLOCK -->
+            @if (myStatus == null && genderBlocked)
+            {
+                <div class="alert alert-danger mt-3">
+
+                    This ride is reserved for
+                    <strong>@Model.PreferredGender</strong>
+                    passengers only.
+
+                </div>
+            }
+
+            <!-- REQUEST FORM -->
+            @if (myStatus == null &&
+                             !genderBlocked &&
+                             canRequest)
+            {
+                <form asp-action="RequestRide"
+                      asp-route-id="@Model.Id"
+                      method="post"
+                      class="mt-3">
+
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-2">
+
+                        <label for="message"
+                               class="form-label">
+                            Message to driver (optional)
+                        </label>
+
+                        <textarea id="message"
+                                  name="message"
+                                  class="form-control"
+                                  rows="2"
+                                  placeholder="e.g. I'll be waiting near the main gate"></textarea>
+
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-accent">
+                        Request to Join
+                    </button>
+
+                </form>
+            }
+
+            <!-- NOT AVAILABLE -->
+            @if (myStatus == null &&
+                             !genderBlocked &&
+                             !canRequest)
+            {
+                <div class="alert alert-info mt-3">
+                    This ride isn't available to request right now.
+                </div>
+            }
+        }
+
+    </div>
+</div>

@@ -1,0 +1,17 @@
+@model UcpCarPool.Models.Vehicle
+@{
+    ViewData["Title"] = "Vehicle Details";
+}
+
+<div class="ucp-card" style="max-width: 560px; margin: 0 auto;">
+    <div class="ucp-card-body">
+        <h2 class="mb-3">@Model.Model</h2>
+        <p><strong>Type:</strong> @Model.VehicleType</p>
+        <p><strong>Color:</strong> @Model.Color</p>
+        <p><strong>Plate Number:</strong> @Model.PlateNumber</p>
+        <p><strong>Total Seats:</strong> @Model.TotalSeats</p>
+        <p><strong>Registered:</strong> @Model.CreatedAt.ToString("d MMM yyyy")</p>
+
+        <a asp-action="Index" class="btn btn-outline-primary mt-2">Back to My Vehicle</a>
+    </div>
+</div>

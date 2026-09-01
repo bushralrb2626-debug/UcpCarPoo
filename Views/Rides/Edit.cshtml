@@ -1,0 +1,76 @@
+﻿@model UcpCarPool.ViewModels.RideFormViewModel
+@{
+    ViewData["Title"] = "Edit Ride";
+}
+
+<div class="ucp-card" style="max-width: 680px; margin: 0 auto;">
+    <div class="ucp-card-body">
+        <div class="auth-eyebrow">Driver tools</div>
+        <h2 class="mb-3">Edit Ride</h2>
+
+        <form asp-action="Edit" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="FromLocation" class="form-label"></label>
+                    <input asp-for="FromLocation" class="form-control" />
+                    <span asp-validation-for="FromLocation" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="ToLocation" class="form-label"></label>
+                    <input asp-for="ToLocation" class="form-control" />
+                    <span asp-validation-for="ToLocation" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="RideDate" class="form-label"></label>
+                    <input asp-for="RideDate" type="date" class="form-control" />
+                    <span asp-validation-for="RideDate" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="DepartureTime" class="form-label"></label>
+                    <input asp-for="DepartureTime" type="time" class="form-control" />
+                    <span asp-validation-for="DepartureTime" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="TotalSeats" class="form-label"></label>
+                    <input asp-for="TotalSeats" type="number" min="1" max="@ViewBag.MaxSeats" class="form-control" />
+                    <span asp-validation-for="TotalSeats" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Contribution" class="form-label"></label>
+                    <input asp-for="Contribution" type="number" step="10" class="form-control" />
+                    <span asp-validation-for="Contribution" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PreferredGender" class="form-label"></label>
+                <select asp-for="PreferredGender" class="form-select">
+                    <option value="Any">Any</option>
+                    <option value="Male">Male only</option>
+                    <option value="Female">Female only</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Notes" class="form-label"></label>
+                <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Notes" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 mt-2">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

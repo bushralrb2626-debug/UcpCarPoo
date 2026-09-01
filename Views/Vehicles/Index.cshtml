@@ -1,0 +1,46 @@
+@model IEnumerable<UcpCarPool.Models.Vehicle>
+@{
+    ViewData["Title"] = "My Vehicle";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <div class="auth-eyebrow">Driver tools</div>
+        <h2 class="mb-0">My Vehicle</h2>
+    </div>
+    @if (!Model.Any())
+    {
+        <a asp-action="Create" class="btn btn-accent">+ Register Vehicle</a>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="ucp-card">
+        <div class="ucp-card-body text-center py-5">
+            <h5>No vehicle registered yet</h5>
+            <p class="text-muted-soft">You need a registered vehicle before you can publish a ride.</p>
+            <a asp-action="Create" class="btn btn-primary mt-2">Register Your Vehicle</a>
+        </div>
+    </div>
+}
+else
+{
+    @foreach (var vehicle in Model)
+    {
+        <div class="ucp-card">
+            <div class="ucp-card-body d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h4 class="mb-1">@vehicle.Model</h4>
+                    <p class="text-muted-soft mb-2">@vehicle.VehicleType &middot; @vehicle.Color</p>
+                    <p class="mb-0"><strong>Plate:</strong> @vehicle.PlateNumber</p>
+                    <p class="mb-0"><strong>Seats:</strong> @vehicle.TotalSeats</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a asp-action="Edit" asp-route-id="@vehicle.Id" class="btn btn-outline-primary btn-sm">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@vehicle.Id" class="btn btn-outline-danger btn-sm">Delete</a>
+                </div>
+            </div>
+        </div>
+    }
+}

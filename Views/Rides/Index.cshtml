@@ -1,0 +1,73 @@
+﻿@model IEnumerable<UcpCarPool.Models.Ride>
+@{
+    ViewData["Title"] = "My Rides";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <div class="auth-eyebrow">Driver tools</div>
+        <h2 class="mb-0">My Posted Rides</h2>
+    </div>
+    <a asp-action="Create" class="btn btn-accent">+ Post a Ride</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="ucp-card">
+        <div class="ucp-card-body text-center py-5">
+            <h5>No rides posted yet</h5>
+            <p class="text-muted-soft">Post your first ride so passengers can find and request it.</p>
+            <a asp-action="Create" class="btn btn-primary mt-2">Post a Ride</a>
+        </div>
+    </div>
+}
+else
+{
+    @foreach (var ride in Model)
+    {
+        var pendingCount = ride.RideRequests.Count(rr => rr.Status == "Pending");
+        var statusClass = ride.Status switch
+        {
+            "Active" => "text-success",
+            "Cancelled" => "text-danger",
+            "Completed" => "text-muted-soft",
+            _ => "text-muted-soft"
+        };
+
+        <div class="ucp-card mb-3">
+            <div class="ucp-card-body">
+                <div class="d-flex justify-content-between flex-wrap gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h5 class="mb-0">@ride.FromLocation</h5>
+                            <span class="text-muted-soft">&rarr;</span>
+                            <h5 class="mb-0">@ride.ToLocation</h5>
+                        </div>
+                        <p class="text-muted-soft mb-1">
+                            @ride.RideDate.ToString("d MMM yyyy") &middot; @ride.DepartureTime.ToString(@"hh\:mm")
+                        </p>
+                        <p class="mb-0">
+                            <strong>@ride.AvailableSeats</strong> / @ride.TotalSeats seats left &middot;
+                            Rs. @ride.Contribution per seat &middot;
+                            <span class="fw-bold @statusClass">@ride.Status</span>
+                            @if (pendingCount > 0)
+                            {
+                                <span class="badge rounded-pill" style="background:var(--color-accent); color:var(--color-primary-dark);">
+                                    @pendingCount pending request@(pendingCount > 1 ? "s" : "")
+                                </span>
+                            }
+                        </p>
+                    </div>
+                    <div class="d-flex gap-2 align-items-start">
+                        <a asp-action="Details" asp-route-id="@ride.Id" class="btn btn-outline-primary btn-sm">View</a>
+                        @if (ride.Status == "Active")
+                        {
+                            <a asp-action="Edit" asp-route-id="@ride.Id" class="btn btn-outline-primary btn-sm">Edit</a>
+                            <a asp-action="Delete" asp-route-id="@ride.Id" class="btn btn-outline-danger btn-sm">Delete</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

@@ -1,0 +1,94 @@
+﻿@model UcpCarPool.ViewModels.RideSearchViewModel
+@{
+    ViewData["Title"] = "Find a Ride";
+}
+
+<div class="mb-3">
+    <div class="auth-eyebrow">Find a Ride</div>
+    <h2 class="mb-0">Search Rides</h2>
+    <p class="text-muted-soft">Results are ranked by our matching engine — route fit, timing, seats, and driver reliability.</p>
+</div>
+
+<div class="ucp-card mb-4">
+    <div class="ucp-card-body">
+        <form asp-action="Search" method="get">
+            <div class="row align-items-end">
+                <div class="col-md-4 mb-3">
+                    <label asp-for="FromLocation" class="form-label"></label>
+                    <input asp-for="FromLocation" class="form-control" placeholder="e.g. Model Town" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label asp-for="ToLocation" class="form-label"></label>
+                    <input asp-for="ToLocation" class="form-control" placeholder="e.g. UCP Campus" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label asp-for="RideDate" class="form-label"></label>
+                    <input asp-for="RideDate" type="date" class="form-control" />
+                </div>
+                <div class="col-md-1 mb-3">
+                    <button type="submit" class="btn btn-primary w-100">Go</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Results.Any())
+{
+    <div class="ucp-card">
+        <div class="ucp-card-body text-center py-5">
+            <h5>No matching rides found</h5>
+            <p class="text-muted-soft">Try a different route or date, or check back later.</p>
+        </div>
+    </div>
+}
+else
+{
+    @foreach (var r in Model.Results)
+    {
+        var cardStyle = r.GenderBlocked ? "opacity: 0.55;" : "";
+        <div class="ucp-card mb-3" style="@cardStyle">
+            <div class="ucp-card-body d-flex justify-content-between flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                        <span class="badge" style="background:var(--color-primary); color:#fff;">@r.MatchScore% match</span>
+                        @if (r.DriverVerified)
+                        {
+                            <span class="badge bg-success">Verified Driver</span>
+                        }
+                        @if (r.PreferredGender == "Female")
+                        {
+                            <span class="badge" style="background:#E85D9C; color:#fff;">Female Only</span>
+                        }
+                        else if (r.PreferredGender == "Male")
+                        {
+                            <span class="badge" style="background:#3B82C4; color:#fff;">Male Only</span>
+                        }
+                        @if (r.AlreadyRequested)
+                        {
+                            <span class="badge bg-secondary">Requested</span>
+                        }
+                    </div>
+                    <h5 class="mb-1">@r.FromLocation <span class="text-muted-soft">&rarr;</span> @r.ToLocation</h5>
+                    <p class="text-muted-soft mb-1">
+                        @r.RideDate.ToString("d MMM yyyy") &middot; @r.DepartureTime.ToString(@"hh\:mm") &middot; @r.VehicleModel
+                    </p>
+                    <p class="mb-0">
+                        Driver: <strong>@r.DriverName</strong> (⭐ @r.DriverRating.ToString("0.0")) &middot;
+                        @r.AvailableSeats seat(s) left &middot; Rs. @r.Contribution/seat
+                    </p>
+                </div>
+                <div class="d-flex align-items-center">
+                    @if (r.GenderBlocked)
+                    {
+                        <button class="btn btn-outline-secondary" disabled title="Not available for your gender">Reserved</button>
+                    }
+                    else
+                    {
+                        <a asp-action="Details" asp-route-id="@r.Id" class="btn btn-accent">View & Request</a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}

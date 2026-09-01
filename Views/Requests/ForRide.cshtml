@@ -1,0 +1,454 @@
+﻿@model UcpCarPool.Models.Ride
+
+@{
+    ViewData["Title"] = "Manage Requests";
+
+    var pendingRequests = Model.RideRequests
+        .Where(r => r.Status == "Pending")
+        .ToList();
+
+    var acceptedRequests = Model.RideRequests
+        .Where(r => r.Status == "Accepted")
+        .ToList();
+
+    var rejectedRequests = Model.RideRequests
+        .Where(r => r.Status == "Rejected")
+        .ToList();
+
+    var cancelledRequests = Model.RideRequests
+        .Where(r => r.Status == "Cancelled")
+        .ToList();
+}
+
+<!-- ================= HEADER ================= -->
+
+<div class="mb-3">
+
+    <div class="auth-eyebrow">
+        Driver tools
+    </div>
+
+    <h2 class="mb-1">
+        Requests for
+        @Model.FromLocation
+        &rarr;
+        @Model.ToLocation
+    </h2>
+
+    <p class="text-muted-soft">
+        @Model.RideDate.ToString("d MMM yyyy")
+        &middot;
+        @Model.AvailableSeats / @Model.TotalSeats seats left
+    </p>
+
+</div>
+
+
+<!-- ================= RIDE STATUS ================= -->
+
+<div class="ucp-card mb-3">
+
+    <div class="ucp-card-body">
+
+        <div class="row text-center">
+
+            <div class="col-md-3">
+                <strong class="d-block fs-4">
+                    @Model.TotalSeats
+                </strong>
+
+                <small class="text-muted-soft">
+                    Total Seats
+                </small>
+            </div>
+
+
+            <div class="col-md-3">
+                <strong class="d-block fs-4">
+                    @Model.AvailableSeats
+                </strong>
+
+                <small class="text-muted-soft">
+                    Available
+                </small>
+            </div>
+
+
+            <div class="col-md-3">
+                <strong class="d-block fs-4">
+                    @pendingRequests.Count
+                </strong>
+
+                <small class="text-muted-soft">
+                    Pending
+                </small>
+            </div>
+
+
+            <div class="col-md-3">
+                <strong class="d-block fs-4">
+                    @acceptedRequests.Count
+                </strong>
+
+                <small class="text-muted-soft">
+                    Accepted
+                </small>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     NO REQUESTS
+     ========================================================= -->
+@if (!Model.RideRequests.Any())
+{
+    <div class="ucp-card">
+
+        <div class="ucp-card-body text-center py-5">
+
+            <h5>
+                No requests yet
+            </h5>
+
+            <p class="text-muted-soft">
+                Once passengers request this ride,
+                they'll show up here.
+            </p>
+
+        </div>
+
+    </div>
+}
+else
+{
+
+    <!-- =====================================================
+         PENDING REQUESTS
+         ===================================================== -->
+    @if (pendingRequests.Any())
+    {
+        <h4 class="mb-3">
+            Pending Requests
+        </h4>
+
+        @foreach (var req in pendingRequests
+            .OrderByDescending(r => r.RequestDate))
+        {
+            <div class="ucp-card mb-3">
+
+                <div class="ucp-card-body">
+
+                    <div class="d-flex justify-content-between
+                        align-items-start
+                        flex-wrap gap-3">
+
+                        <!-- PASSENGER INFO -->
+
+                        <div>
+
+                            <div class="d-flex
+                                align-items-center
+                                gap-2 mb-1
+                                flex-wrap">
+
+                                <h5 class="mb-0">
+                                    @req.Passenger?.FullName
+                                </h5>
+
+
+                                <span class="badge bg-warning text-dark">
+                                    Pending
+                                </span>
+
+
+                                @if (req.Passenger?.IsUcpVerified == true)
+                                {
+                                    <span class="badge bg-info text-dark">
+                                        Verified
+                                    </span>
+                                }
+
+                            </div>
+
+
+                            @if (!string.IsNullOrWhiteSpace(
+                                req.Passenger?.Department))
+                            {
+                                <p class="text-muted-soft mb-1">
+                                    @req.Passenger.Department
+                                </p>
+                            }
+
+
+                            <p class="text-muted-soft mb-1">
+
+                                Requested
+                                @req.RequestDate.ToString(
+                                    "d MMM yyyy, h:mm tt")
+
+                            </p>
+
+
+                            @if (!string.IsNullOrWhiteSpace(req.Message))
+                            {
+                                <div class="mt-2">
+
+                                    <strong>
+                                        Message:
+                                    </strong>
+
+                                    <p class="mb-0 fst-italic">
+                                        "@req.Message"
+                                    </p>
+
+                                </div>
+                            }
+
+                        </div>
+
+
+                        <!-- ACTION BUTTONS -->
+
+                        <div class="d-flex gap-2
+                            align-items-start
+                            flex-wrap">
+
+                            <!-- ACCEPT -->
+
+                            <form asp-controller="Requests"
+                                  asp-action="Accept"
+                                  asp-route-id="@req.Id"
+                                  method="post">
+
+                                @Html.AntiForgeryToken()
+
+                                <button type="submit"
+                                        class="btn btn-primary btn-sm"
+                                        onclick="return confirm('Accept this passenger request?');">
+
+                                    Accept
+
+                                </button>
+
+                            </form>
+
+
+                            <!-- REJECT -->
+
+                            <form asp-controller="Requests"
+                                  asp-action="Reject"
+                                  asp-route-id="@req.Id"
+                                  method="post">
+
+                                @Html.AntiForgeryToken()
+
+                                <button type="submit"
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('Reject this passenger request?');">
+
+                                    Reject
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+    }
+
+
+    <!-- =====================================================
+         ACCEPTED REQUESTS
+         ===================================================== -->
+    @if (acceptedRequests.Any())
+    {
+        <h4 class="mb-3 mt-4">
+            Accepted Passengers
+        </h4>
+
+        @foreach (var req in acceptedRequests
+            .OrderByDescending(r => r.RequestDate))
+        {
+            <div class="ucp-card mb-3">
+
+                <div class="ucp-card-body">
+
+                    <div class="d-flex
+                        justify-content-between
+                        align-items-center
+                        flex-wrap gap-3">
+
+                        <div>
+
+                            <div class="d-flex
+                                align-items-center
+                                gap-2">
+
+                                <h5 class="mb-0">
+                                    @req.Passenger?.FullName
+                                </h5>
+
+                                <span class="badge bg-success">
+                                    Accepted
+                                </span>
+
+
+                                @if (req.Passenger?.IsUcpVerified == true)
+                                {
+                                    <span class="badge bg-info text-dark">
+                                        Verified
+                                    </span>
+                                }
+
+                            </div>
+
+
+                            <p class="text-muted-soft mb-0 mt-1">
+
+                                Request sent
+                                @req.RequestDate.ToString(
+                                    "d MMM yyyy, h:mm tt")
+
+                            </p>
+
+                        </div>
+
+
+                        <span class="text-success fw-semibold">
+                            Seat Confirmed
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+    }
+
+
+    <!-- =====================================================
+         REJECTED REQUESTS
+         ===================================================== -->
+    @if (rejectedRequests.Any())
+    {
+        <h4 class="mb-3 mt-4">
+            Rejected Requests
+        </h4>
+
+        @foreach (var req in rejectedRequests
+            .OrderByDescending(r => r.RequestDate))
+        {
+            <div class="ucp-card mb-3">
+
+                <div class="ucp-card-body">
+
+                    <div class="d-flex
+                        justify-content-between
+                        align-items-center
+                        flex-wrap gap-3">
+
+                        <div>
+
+                            <h5 class="mb-1">
+                                @req.Passenger?.FullName
+                            </h5>
+
+                            <p class="text-muted-soft mb-0">
+
+                                Requested
+                                @req.RequestDate.ToString(
+                                    "d MMM yyyy, h:mm tt")
+
+                            </p>
+
+                        </div>
+
+
+                        <span class="badge bg-danger">
+                            Rejected
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+    }
+
+
+    <!-- =====================================================
+         CANCELLED REQUESTS
+         ===================================================== -->
+    @if (cancelledRequests.Any())
+    {
+        <h4 class="mb-3 mt-4">
+            Cancelled Requests
+        </h4>
+
+        @foreach (var req in cancelledRequests
+            .OrderByDescending(r => r.RequestDate))
+        {
+            <div class="ucp-card mb-3">
+
+                <div class="ucp-card-body">
+
+                    <div class="d-flex
+                        justify-content-between
+                        align-items-center
+                        flex-wrap gap-3">
+
+                        <div>
+
+                            <h5 class="mb-1">
+                                @req.Passenger?.FullName
+                            </h5>
+
+                            <p class="text-muted-soft mb-0">
+
+                                Requested
+                                @req.RequestDate.ToString(
+                                    "d MMM yyyy, h:mm tt")
+
+                            </p>
+
+                        </div>
+
+
+                        <span class="badge bg-secondary">
+                            Cancelled
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+    }
+
+}
+
+
+<!-- ================= BACK BUTTON ================= -->
+
+<a asp-controller="Rides"
+   asp-action="Details"
+   asp-route-id="@Model.Id"
+   class="btn btn-outline-primary mt-2">
+
+    Back to Ride
+
+</a>

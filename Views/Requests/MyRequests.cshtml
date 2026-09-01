@@ -1,0 +1,60 @@
+﻿@model IEnumerable<UcpCarPool.Models.RideRequest>
+@{
+    ViewData["Title"] = "My Requests";
+}
+
+<div class="mb-3">
+    <div class="auth-eyebrow">Passenger tools</div>
+    <h2 class="mb-0">My Ride Requests</h2>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="ucp-card">
+        <div class="ucp-card-body text-center py-5">
+            <h5>No requests yet</h5>
+            <p class="text-muted-soft">Search for a ride and request to join one.</p>
+            <a asp-controller="Rides" asp-action="Search" class="btn btn-primary mt-2">Find a Ride</a>
+        </div>
+    </div>
+}
+else
+{
+    @foreach (var req in Model)
+    {
+        var badgeClass = req.Status switch
+        {
+            "Accepted" => "bg-success",
+            "Rejected" => "bg-danger",
+            "Cancelled" => "bg-secondary",
+            _ => "bg-warning text-dark"
+        };
+
+        <div class="ucp-card mb-3">
+            <div class="ucp-card-body d-flex justify-content-between flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h5 class="mb-0">@req.Ride?.FromLocation <span class="text-muted-soft">&rarr;</span> @req.Ride?.ToLocation</h5>
+                        <span class="badge @badgeClass">@req.Status</span>
+                    </div>
+                    <p class="text-muted-soft mb-1">
+                        @req.Ride?.RideDate.ToString("d MMM yyyy") &middot; @req.Ride?.DepartureTime.ToString(@"hh\:mm")
+                        &middot; Driver: @req.Ride?.Driver?.FullName
+                    </p>
+                    <p class="mb-0">Requested @req.RequestDate.ToString("d MMM yyyy, h:mm tt")</p>
+                </div>
+
+                <div class="d-flex gap-2 align-items-start">
+                    <a asp-controller="Rides" asp-action="Details" asp-route-id="@req.RideId" class="btn btn-outline-primary btn-sm">View Ride</a>
+                    @if (req.Status == "Pending" || req.Status == "Accepted")
+                    {
+                        <form asp-controller="Requests" asp-action="Cancel" asp-route-id="@req.Id" method="post"
+                              onsubmit="return confirm('Cancel this request?');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Cancel</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}

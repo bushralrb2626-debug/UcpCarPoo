@@ -1,0 +1,110 @@
+﻿@model UcpCarPool.ViewModels.HomeFeedViewModel
+@{
+    ViewData["Title"] = "Home";
+    var isSignedIn = User.Identity?.IsAuthenticated ?? false;
+}
+
+@if (!isSignedIn)
+{
+    <div class="ucp-card mb-4" style="background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));">
+        <div class="ucp-card-body text-center py-5" style="color:#fff;">
+            <h1 class="display-font mb-2" style="color:#fff;">Share the ride. Split the cost.</h1>
+            <p class="mb-4" style="color:rgba(255,255,255,0.85);">
+                UcpCarPool connects verified UCP students and staff for safe, affordable rides — to campus, across the city, or beyond.
+            </p>
+            <a asp-controller="Account" asp-action="Register" class="btn btn-accent btn-lg">Get Started</a>
+        </div>
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-4">
+        <div class="ucp-card text-center py-3">
+            <div class="fs-3 fw-bold" style="color:var(--color-primary);">@Model.TotalActiveRides</div>
+            <div class="text-muted-soft small">Active Rides</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="ucp-card text-center py-3">
+            <div class="fs-3 fw-bold" style="color:var(--color-primary);">@Model.TotalMembers</div>
+            <div class="text-muted-soft small">Members</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="ucp-card text-center py-3">
+            <div class="fs-3 fw-bold" style="color:var(--color-primary);">@Model.TotalCompletedRides</div>
+            <div class="text-muted-soft small">Rides Completed</div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0">Community Activity</h4>
+    <form method="get" class="d-flex gap-2">
+        <select name="batch" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto;">
+            <option value="">All Batches</option>
+            @foreach (var b in Model.AvailableBatches)
+            {
+                <option value="@b" selected="@(b == Model.SelectedBatch)">@b</option>
+            }
+        </select>
+    </form>
+</div>
+
+@if (!Model.FeedItems.Any())
+{
+    <div class="ucp-card">
+        <div class="ucp-card-body text-center py-5">
+            <h5>No activity yet</h5>
+            <p class="text-muted-soft">Be the first to post a ride!</p>
+        </div>
+    </div>
+}
+else
+{
+    @foreach (var item in Model.FeedItems)
+    {
+        var icon = item.Type switch
+        {
+            "RidePosted" => "🚗",
+            "RideCompleted" => "✅",
+            "NewMember" => "👋",
+            _ => "📍"
+        };
+
+        var timeAgo = (DateTime.Now - item.When).TotalHours < 24
+            ? $"{Math.Max(1, (int)(DateTime.Now - item.When).TotalHours)}h ago"
+            : item.When.ToString("d MMM");
+
+        <div class="ucp-card mb-2">
+            <div class="ucp-card-body py-3 d-flex gap-3 align-items-start">
+                <div class="fs-4">@icon</div>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <strong>@item.Headline</strong>
+                        @if (item.Verified)
+                        {
+                            <span class="badge bg-success" style="font-size:0.65rem;">Verified</span>
+                        }
+                        @if (!string.IsNullOrEmpty(item.Batch))
+                        {
+                            <span class="badge bg-light text-dark border" style="font-size:0.65rem;">@item.Batch</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(item.SubText))
+                    {
+                        <p class="text-muted-soft mb-0 small">@item.SubText</p>
+                    }
+                </div>
+                <div class="text-end">
+                    <span class="text-muted-soft small">@timeAgo</span>
+                    @if (item.RideId.HasValue && isSignedIn)
+                    {
+                        <br />
+                        <a asp-controller="Rides" asp-action="Details" asp-route-id="@item.RideId" class="small">View</a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}

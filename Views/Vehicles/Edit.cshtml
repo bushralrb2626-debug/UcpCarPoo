@@ -1,0 +1,58 @@
+@model UcpCarPool.Models.Vehicle
+@{
+    ViewData["Title"] = "Edit Vehicle";
+}
+
+<div class="ucp-card" style="max-width: 640px; margin: 0 auto;">
+    <div class="ucp-card-body">
+        <div class="auth-eyebrow">Driver tools</div>
+        <h2 class="mb-3">Edit Vehicle</h2>
+
+        <form asp-action="Edit" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="VehicleType" class="form-label"></label>
+                    <select asp-for="VehicleType" class="form-select">
+                        <option value="Car">Car</option>
+                        <option value="SUV">SUV</option>
+                        <option value="Van">Van</option>
+                        <option value="Bike">Bike</option>
+                    </select>
+                    <span asp-validation-for="VehicleType" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Model" class="form-label"></label>
+                    <input asp-for="Model" class="form-control" />
+                    <span asp-validation-for="Model" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Color" class="form-label"></label>
+                    <input asp-for="Color" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="TotalSeats" class="form-label"></label>
+                    <input asp-for="TotalSeats" type="number" min="1" max="8" class="form-control" />
+                    <span asp-validation-for="TotalSeats" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PlateNumber" class="form-label"></label>
+                <input asp-for="PlateNumber" class="form-control" />
+                <span asp-validation-for="PlateNumber" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 mt-2">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

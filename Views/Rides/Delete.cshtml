@@ -1,0 +1,37 @@
+﻿@model UcpCarPool.Models.Ride
+@{
+    ViewData["Title"] = "Delete Ride";
+    var hasAccepted = Model.RideRequests.Any(rr => rr.Status == "Accepted");
+}
+
+<div class="ucp-card" style="max-width: 560px; margin: 0 auto;">
+    <div class="ucp-card-body">
+        <h2 class="mb-1 text-danger">@(hasAccepted ? "Cancel this ride?" : "Delete this ride?")</h2>
+        <p class="text-muted-soft">
+            @if (hasAccepted)
+            {
+                <span>This ride has confirmed passengers, so it will be <strong>cancelled</strong> instead of deleted.</span>
+            }
+            else
+            {
+                <span>This can't be undone.</span>
+            }
+        </p>
+
+        <div class="border rounded-3 p-3 mb-3" style="background:#F7F9F8;">
+            <p class="mb-1"><strong>@Model.FromLocation &rarr; @Model.ToLocation</strong></p>
+            <p class="mb-1">@Model.RideDate.ToString("d MMM yyyy") &middot; @Model.DepartureTime.ToString(@"hh\:mm")</p>
+            <p class="mb-0">@Model.AvailableSeats / @Model.TotalSeats seats left</p>
+        </div>
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger flex-fill">
+                    @(hasAccepted ? "Yes, Cancel Ride" : "Yes, Delete")
+                </button>
+                <a asp-action="Index" class="btn btn-outline-primary flex-fill">Back</a>
+            </div>
+        </form>
+    </div>
+</div>

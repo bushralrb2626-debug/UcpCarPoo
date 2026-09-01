@@ -1,0 +1,59 @@
+﻿@model UcpCarPool.ViewModels.RateViewModel
+@{
+    ViewData["Title"] = "Rate";
+}
+
+<div class="ucp-card" style="max-width: 520px; margin: 0 auto;">
+    <div class="ucp-card-body">
+        <div class="auth-eyebrow">Feedback</div>
+        <h2 class="mb-1">Rate @Model.ToUserName</h2>
+        <p class="text-muted-soft">@Model.RouteLabel</p>
+
+        <form asp-action="Rate" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <input type="hidden" asp-for="RideId" />
+            <input type="hidden" asp-for="ToUserId" />
+            <input type="hidden" asp-for="ToUserName" />
+            <input type="hidden" asp-for="RouteLabel" />
+
+            <div class="mb-3 text-center">
+                <label class="form-label d-block">Your Rating</label>
+                <div class="star-rating fs-1">
+                    @for (int i = 5; i >= 1; i--)
+                    {
+                        <input type="radio" asp-for="Stars" id="star@(i)" value="@i" style="display:none;" />
+                        <label for="star@(i)" style="cursor:pointer; color: var(--color-border);" class="star-label" data-value="@i">★</label>
+                    }
+                </div>
+                <span asp-validation-for="Stars" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Comment" class="form-label"></label>
+                <textarea asp-for="Comment" class="form-control" rows="3" placeholder="How was your experience?"></textarea>
+                <span asp-validation-for="Comment" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2">Submit Rating</button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .star-rating {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: center;
+        gap: 4px;
+    }
+
+        .star-rating input:checked ~ label,
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: var(--color-accent) !important;
+        }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

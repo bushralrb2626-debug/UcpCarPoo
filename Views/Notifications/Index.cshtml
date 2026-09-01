@@ -1,0 +1,57 @@
+﻿@model IEnumerable<UcpCarPool.Models.Notification>
+
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="mb-3">
+    <div class="auth-eyebrow">Updates</div>
+
+    <h2 class="mb-0">
+        Notifications
+    </h2>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="ucp-card">
+        <div class="ucp-card-body text-center py-5">
+
+            <h5>No notifications yet</h5>
+
+            <p class="text-muted-soft">
+                Ride updates and request responses will show up here.
+            </p>
+
+        </div>
+    </div>
+}
+else
+{
+    foreach (var n in Model)
+    {
+        <div class="ucp-card mb-2">
+
+            <div class="ucp-card-body py-3">
+
+                <div class="d-flex justify-content-between align-items-start">
+
+                    <h6 class="mb-1">
+                        @n.Title
+                    </h6>
+
+                    <span class="text-muted-soft small">
+                        @n.CreatedAt.ToString("d MMM, h:mm tt")
+                    </span>
+
+                </div>
+
+                <p class="mb-0 text-muted-soft">
+                    @n.Message
+                </p>
+
+            </div>
+
+        </div>
+    }
+}

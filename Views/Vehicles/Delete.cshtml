@@ -1,0 +1,25 @@
+@model UcpCarPool.Models.Vehicle
+@{
+    ViewData["Title"] = "Delete Vehicle";
+}
+
+<div class="ucp-card" style="max-width: 560px; margin: 0 auto;">
+    <div class="ucp-card-body">
+        <h2 class="mb-1 text-danger">Delete Vehicle?</h2>
+        <p class="text-muted-soft">This can't be undone.</p>
+
+        <div class="border rounded-3 p-3 mb-3" style="background:#F7F9F8;">
+            <p class="mb-1"><strong>@Model.Model</strong> (@Model.VehicleType)</p>
+            <p class="mb-1">Plate: @Model.PlateNumber</p>
+            <p class="mb-0">Seats: @Model.TotalSeats</p>
+        </div>
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger flex-fill">Yes, Delete</button>
+                <a asp-action="Index" class="btn btn-outline-primary flex-fill">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
