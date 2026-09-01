@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <div class="auth-eyebrow">Administration</div>
+        <h2 class="mb-0">Admin Dashboard</h2>
+    </div>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary btn-sm">Back to Home</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-3 col-6">
+        <div class="ucp-card text-center py-4">
+            <div class="fs-2 fw-bold" style="color:var(--color-primary);">@ViewBag.TotalUsers</div>
+            <div class="text-muted-soft small">Total Users</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="ucp-card text-center py-4">
+            <div class="fs-2 fw-bold" style="color:var(--color-primary);">@ViewBag.TotalRides</div>
+            <div class="text-muted-soft small">Total Rides</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="ucp-card text-center py-4">
+            <div class="fs-2 fw-bold" style="color:var(--color-primary);">@ViewBag.ActiveRides</div>
+            <div class="text-muted-soft small">Active Rides</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="ucp-card text-center py-4">
+            <div class="fs-2 fw-bold" style="color:var(--color-primary);">@ViewBag.TotalVehicles</div>
+            <div class="text-muted-soft small">Registered Vehicles</div>
+        </div>
+    </div>
+</div>

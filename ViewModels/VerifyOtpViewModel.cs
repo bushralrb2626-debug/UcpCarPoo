@@ -12,5 +12,8 @@ namespace UcpCarPool.ViewModels
         [StringLength(6, MinimumLength = 6, ErrorMessage = "Code must be 6 digits.")]
         [Display(Name = "Verification Code")]
         public string Code { get; set; } = string.Empty;
+
+        /// <summary>Registration (default) or PasswordReset.</summary>
+        public string Purpose { get; set; } = "Registration";
     }
 }
