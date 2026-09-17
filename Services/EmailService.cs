@@ -22,121 +22,56 @@ namespace UcpCarPool.Services
             string subject,
             string body)
         {
-            var tenantId =
-                _configuration["MicrosoftGraph:TenantId"];
+            var apiKey = _configuration["Brevo:ApiKey"];
+            var senderEmail = _configuration["Brevo:SenderEmail"];
 
-            var clientId =
-                _configuration["MicrosoftGraph:ClientId"];
-
-            var clientSecret =
-                _configuration["MicrosoftGraph:ClientSecret"];
-
-            var senderEmail =
-                _configuration["MicrosoftGraph:SenderEmail"];
-
-            if (string.IsNullOrWhiteSpace(tenantId) ||
-                string.IsNullOrWhiteSpace(clientId) ||
-                string.IsNullOrWhiteSpace(clientSecret) ||
+            if (string.IsNullOrWhiteSpace(apiKey) ||
                 string.IsNullOrWhiteSpace(senderEmail))
             {
                 throw new InvalidOperationException(
-                    "Microsoft Graph email settings are not configured.");
+                    "Brevo email settings are not configured.");
             }
 
-            // Get access token
-            var tokenClient =
-                _httpClientFactory.CreateClient();
-
-            var tokenRequest =
-                new Dictionary<string, string>
-                {
-                    ["client_id"] = clientId,
-                    ["client_secret"] = clientSecret,
-                    ["scope"] = "https://graph.microsoft.com/.default",
-                    ["grant_type"] = "client_credentials"
-                };
-
-            using var tokenContent =
-                new FormUrlEncodedContent(tokenRequest);
-
-            var tokenResponse =
-                await tokenClient.PostAsync(
-                    $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token",
-                    tokenContent);
-
-            var tokenJson =
-                await tokenResponse.Content.ReadAsStringAsync();
-
-            if (!tokenResponse.IsSuccessStatusCode)
-            {
-                throw new InvalidOperationException(
-                    $"Microsoft identity token request failed: {tokenJson}");
-            }
-
-            using var tokenDocument =
-                JsonDocument.Parse(tokenJson);
-
-            var accessToken =
-                tokenDocument
-                    .RootElement
-                    .GetProperty("access_token")
-                    .GetString();
-
-            if (string.IsNullOrWhiteSpace(accessToken))
-            {
-                throw new InvalidOperationException(
-                    "Microsoft Graph access token was not returned.");
-            }
-
-            // Email body
             var message = new
             {
-                message = new
+                sender = new
                 {
-                    subject = subject,
+                    email = senderEmail
+                },
 
-                    body = new
+                to = new[]
+                {
+                    new
                     {
-                        contentType = "HTML",
-                        content = body
-                    },
-
-                    toRecipients = new[]
-                    {
-                        new
-                        {
-                            emailAddress = new
-                            {
-                                address = toEmail
-                            }
-                        }
+                        email = toEmail
                     }
                 },
 
-                saveToSentItems = true
+                subject = subject,
+
+                htmlContent = body
             };
 
-            var json =
-                JsonSerializer.Serialize(message);
+            var json = JsonSerializer.Serialize(message);
 
-            using var content =
-                new StringContent(
-                    json,
-                    Encoding.UTF8,
-                    "application/json");
+            using var content = new StringContent(
+                json,
+                Encoding.UTF8,
+                "application/json");
 
-            var graphClient =
-                _httpClientFactory.CreateClient();
+            var client = _httpClientFactory.CreateClient();
 
-            graphClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue(
-                    "Bearer",
-                    accessToken);
+            client.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue(
+                    "application/json"));
 
-            var response =
-                await graphClient.PostAsync(
-                    $"https://graph.microsoft.com/v1.0/users/{senderEmail}/sendMail",
-                    content);
+            client.DefaultRequestHeaders.Add(
+                "api-key",
+                apiKey);
+
+            var response = await client.PostAsync(
+                "https://api.brevo.com/v3/smtp/email",
+                content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -144,7 +79,7 @@ namespace UcpCarPool.Services
                     await response.Content.ReadAsStringAsync();
 
                 throw new InvalidOperationException(
-                    $"Microsoft Graph email sending failed: {error}");
+                    $"Brevo email sending failed: {error}");
             }
         }
     }

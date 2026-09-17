@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using UcpCarPool.Data;
 using UcpCarPool.Models;
+using UcpCarPool.Services;
 using UcpCarPool.ViewModels;
 
 namespace UcpCarPool.Controllers
@@ -10,6 +11,7 @@ namespace UcpCarPool.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly EmailService _emailService;
 
         private const string UcpEmailDomain = "@ucp.edu.pk";
         private const string OtpPurposeRegistration = "Registration";
@@ -17,14 +19,17 @@ namespace UcpCarPool.Controllers
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager)
+            SignInManager<ApplicationUser> signInManager,
+            EmailService emailService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _emailService = emailService;
         }
 
+
         // =========================================================
-        // REGISTER
+        // REGISTER - GET
         // =========================================================
 
         [HttpGet]
@@ -36,6 +41,11 @@ namespace UcpCarPool.Controllers
             return View(new RegisterViewModel());
         }
 
+
+        // =========================================================
+        // REGISTER - POST
+        // =========================================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
@@ -45,7 +55,20 @@ namespace UcpCarPool.Controllers
 
             var email = model.Email.Trim();
 
-            var existingUser = await _userManager.FindByEmailAsync(email);
+            // Only UCP email addresses are allowed
+            if (!email.EndsWith(
+                UcpEmailDomain,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(
+                    "",
+                    "Only UCP email addresses (@ucp.edu.pk) are allowed.");
+
+                return View(model);
+            }
+
+            var existingUser =
+                await _userManager.FindByEmailAsync(email);
 
             if (existingUser != null)
             {
@@ -56,10 +79,6 @@ namespace UcpCarPool.Controllers
                 return View(model);
             }
 
-            var isUcpEmail = email.EndsWith(
-                UcpEmailDomain,
-                StringComparison.OrdinalIgnoreCase);
-
             var user = new ApplicationUser
             {
                 UserName = email,
@@ -69,7 +88,7 @@ namespace UcpCarPool.Controllers
                 Batch = model.Batch,
                 Department = model.Department,
                 Gender = model.Gender,
-                IsUcpVerified = isUcpEmail,
+                IsUcpVerified = true,
                 EmailConfirmed = false,
                 CreatedAt = DateTime.Now
             };
@@ -81,7 +100,11 @@ namespace UcpCarPool.Controllers
             if (!result.Succeeded)
             {
                 foreach (var error in result.Errors)
-                    ModelState.AddModelError("", error.Description);
+                {
+                    ModelState.AddModelError(
+                        "",
+                        error.Description);
+                }
 
                 return View(model);
             }
@@ -90,17 +113,38 @@ namespace UcpCarPool.Controllers
                 user,
                 Roles.Member);
 
+            // Generate OTP
             var otp = GenerateAndAttachOtp(user);
 
             await _userManager.UpdateAsync(user);
 
-            TempData["DemoOtp"] = otp;
-            TempData["Info"] =
-                "Use the demo verification code below to verify your email.";
+            // Send OTP through Brevo
+            await _emailService.SendEmailAsync(
+                user.Email!,
+                "UcpCarPool - Email Verification Code",
+                $"""
+                <h2>UcpCarPool Email Verification</h2>
+
+                <p>Hello {user.FullName},</p>
+
+                <p>Your UcpCarPool verification code is:</p>
+
+                <h1>{otp}</h1>
+
+                <p>This code will expire in 10 minutes.</p>
+
+                <p>If you did not create this account, please ignore this email.</p>
+
+                <p>Regards,<br>UcpCarPool Team</p>
+                """);
 
             return RedirectToAction(
                 nameof(VerifyOtp),
-                new { email = user.Email, purpose = OtpPurposeRegistration });
+                new
+                {
+                    email = user.Email,
+                    purpose = OtpPurposeRegistration
+                });
         }
 
 
@@ -109,7 +153,9 @@ namespace UcpCarPool.Controllers
         // =========================================================
 
         [HttpGet]
-        public IActionResult VerifyOtp(string email, string purpose = OtpPurposeRegistration)
+        public IActionResult VerifyOtp(
+            string email,
+            string purpose = OtpPurposeRegistration)
         {
             return View(
                 new VerifyOtpViewModel
@@ -133,13 +179,15 @@ namespace UcpCarPool.Controllers
                 return View(model);
 
             var email = model.Email.Trim();
+
             var isPasswordReset =
                 string.Equals(
                     model.Purpose,
                     OtpPurposePasswordReset,
                     StringComparison.OrdinalIgnoreCase);
 
-            var user = await _userManager.FindByEmailAsync(email);
+            var user =
+                await _userManager.FindByEmailAsync(email);
 
             if (user == null)
             {
@@ -186,10 +234,13 @@ namespace UcpCarPool.Controllers
                 return View(model);
             }
 
+            // Clear OTP after successful verification
             user.OtpCode = null;
             user.OtpExpiresAt = null;
+
             await _userManager.UpdateAsync(user);
 
+            // Password reset verification
             if (isPasswordReset)
             {
                 var token =
@@ -207,6 +258,7 @@ namespace UcpCarPool.Controllers
                     });
             }
 
+            // Registration verification
             user.EmailConfirmed = true;
 
             await _userManager.UpdateAsync(user);
@@ -234,8 +286,7 @@ namespace UcpCarPool.Controllers
         {
             if (string.IsNullOrWhiteSpace(email))
             {
-                return RedirectToAction(
-                    nameof(Register));
+                return RedirectToAction(nameof(Register));
             }
 
             email = email.Trim();
@@ -246,15 +297,15 @@ namespace UcpCarPool.Controllers
                     OtpPurposePasswordReset,
                     StringComparison.OrdinalIgnoreCase);
 
-            var user = await _userManager.FindByEmailAsync(email);
+            var user =
+                await _userManager.FindByEmailAsync(email);
 
             if (user == null)
             {
                 TempData["Error"] =
                     "Account not found.";
 
-                return RedirectToAction(
-                    nameof(Login));
+                return RedirectToAction(nameof(Login));
             }
 
             if (!isPasswordReset && user.EmailConfirmed)
@@ -262,21 +313,63 @@ namespace UcpCarPool.Controllers
                 TempData["Info"] =
                     "Your email is already verified. Please log in.";
 
-                return RedirectToAction(
-                    nameof(Login));
+                return RedirectToAction(nameof(Login));
             }
 
             var otp = GenerateAndAttachOtp(user);
 
             await _userManager.UpdateAsync(user);
 
-            TempData["DemoOtp"] = otp;
+            // Send new OTP through Brevo
+            var subject = isPasswordReset
+                ? "UcpCarPool - Password Reset Code"
+                : "UcpCarPool - New Email Verification Code";
+
+            var body = isPasswordReset
+                ? $"""
+                <h2>UcpCarPool Password Reset</h2>
+
+                <p>Hello {user.FullName},</p>
+
+                <p>Your password reset verification code is:</p>
+
+                <h1>{otp}</h1>
+
+                <p>This code will expire in 10 minutes.</p>
+
+                <p>If you did not request a password reset, please ignore this email.</p>
+
+                <p>Regards,<br>UcpCarPool Team</p>
+                """
+                : $"""
+                <h2>UcpCarPool Email Verification</h2>
+
+                <p>Hello {user.FullName},</p>
+
+                <p>Your new verification code is:</p>
+
+                <h1>{otp}</h1>
+
+                <p>This code will expire in 10 minutes.</p>
+
+                <p>Regards,<br>UcpCarPool Team</p>
+                """;
+
+            await _emailService.SendEmailAsync(
+                user.Email!,
+                subject,
+                body);
+
             TempData["Info"] =
-                "A new demo verification code has been generated.";
+                "A new verification code has been sent to your email.";
 
             return RedirectToAction(
                 nameof(VerifyOtp),
-                new { email = user.Email, purpose });
+                new
+                {
+                    email = user.Email,
+                    purpose
+                });
         }
 
 
@@ -294,8 +387,7 @@ namespace UcpCarPool.Controllers
 
             ViewData["ReturnUrl"] = returnUrl;
 
-            return View(
-                new LoginViewModel());
+            return View(new LoginViewModel());
         }
 
 
@@ -314,7 +406,8 @@ namespace UcpCarPool.Controllers
 
             var email = model.Email.Trim();
 
-            var user = await _userManager.FindByEmailAsync(email);
+            var user =
+                await _userManager.FindByEmailAsync(email);
 
             if (user != null && !user.EmailConfirmed)
             {
@@ -329,13 +422,34 @@ namespace UcpCarPool.Controllers
 
                     await _userManager.UpdateAsync(user);
 
-                    TempData["DemoOtp"] = otp;
+                    // Send OTP through Brevo
+                    await _emailService.SendEmailAsync(
+                        user.Email!,
+                        "UcpCarPool - Email Verification Code",
+                        $"""
+                        <h2>UcpCarPool Email Verification</h2>
+
+                        <p>Hello {user.FullName},</p>
+
+                        <p>Your email verification code is:</p>
+
+                        <h1>{otp}</h1>
+
+                        <p>This code will expire in 10 minutes.</p>
+
+                        <p>Regards,<br>UcpCarPool Team</p>
+                        """);
+
                     TempData["Info"] =
-                        "Please verify your email using the demo verification code below.";
+                        "A verification code has been sent to your email.";
 
                     return RedirectToAction(
                         nameof(VerifyOtp),
-                        new { email = user.Email, purpose = OtpPurposeRegistration });
+                        new
+                        {
+                            email = user.Email,
+                            purpose = OtpPurposeRegistration
+                        });
                 }
             }
 
@@ -428,13 +542,36 @@ namespace UcpCarPool.Controllers
 
             await _userManager.UpdateAsync(user);
 
-            TempData["DemoOtp"] = otp;
+            // Send password reset OTP through Brevo
+            await _emailService.SendEmailAsync(
+                user.Email!,
+                "UcpCarPool - Password Reset Code",
+                $"""
+                <h2>UcpCarPool Password Reset</h2>
+
+                <p>Hello {user.FullName},</p>
+
+                <p>Your password reset verification code is:</p>
+
+                <h1>{otp}</h1>
+
+                <p>This code will expire in 10 minutes.</p>
+
+                <p>If you did not request a password reset, please ignore this email.</p>
+
+                <p>Regards,<br>UcpCarPool Team</p>
+                """);
+
             TempData["Info"] =
-                "Use the demo verification code below to continue resetting your password.";
+                "A password reset verification code has been sent to your email.";
 
             return RedirectToAction(
                 nameof(VerifyOtp),
-                new { email = user.Email, purpose = OtpPurposePasswordReset });
+                new
+                {
+                    email = user.Email,
+                    purpose = OtpPurposePasswordReset
+                });
         }
 
 
@@ -464,7 +601,8 @@ namespace UcpCarPool.Controllers
                 TempData["Error"] =
                     "Invalid or expired password reset link. Please start the forgot password process again.";
 
-                return RedirectToAction(nameof(ForgotPassword));
+                return RedirectToAction(
+                    nameof(ForgotPassword));
             }
 
             return View(
